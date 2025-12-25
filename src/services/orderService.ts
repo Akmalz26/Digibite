@@ -251,10 +251,17 @@ export async function getOrderDetails(orderId: string): Promise<{
         .from('orders')
         .select(`
       *,
-      tenants (name, image_url)
+      tenants (
+        name, 
+        image_url,
+        profiles:owner_id (
+            phone
+        )
+      )
     `)
         .eq('id', orderId)
         .single();
+
 
     if (orderError) throw orderError;
 

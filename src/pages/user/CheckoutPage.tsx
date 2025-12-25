@@ -211,6 +211,7 @@ export const CheckoutPage = () => {
 
       // Midtrans payment
       if (snap_token && window.snap) {
+        clearCart();
         window.snap.pay(snap_token, {
           onSuccess: (result) => {
             console.log('Payment success:', result);

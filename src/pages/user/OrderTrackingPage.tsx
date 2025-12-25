@@ -241,13 +241,17 @@ export const OrderTrackingPage = () => {
             )}
 
             {/* Contact Seller */}
-            {order.tenants?.phone && (
+            {order.tenants?.profiles?.phone && (
                 <GlassCard>
                     <h3 className="font-semibold mb-3">Hubungi Penjual</h3>
                     <Button
                         variant="outline"
                         className="w-full"
-                        onClick={() => window.open(`https://wa.me/${order.tenants.phone.replace('+', '')}`, '_blank')}
+                        onClick={() => {
+                            const phone = order.tenants.profiles.phone.replace(/[^0-9]/g, '');
+                            const formattedPhone = phone.startsWith('0') ? '62' + phone.slice(1) : phone;
+                            window.open(`https://wa.me/${formattedPhone}`, '_blank');
+                        }}
                     >
                         <Phone className="w-4 h-4 mr-2" />
                         WhatsApp Penjual
