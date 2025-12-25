@@ -12,11 +12,32 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
     const init = async () => {
-      await initialize();
-      setInitialized(true);
+      try {
+        await initialize();
+      } catch (e) {
+        console.error("Init failed", e);
+      } finally {
+        if (mounted) setInitialized(true);
+      }
     };
+
     init();
+
+    // Safety timeout to prevent infinite loading
+    const timer = setTimeout(() => {
+      if (mounted && !initialized) {
+        console.warn("Auth initialization timed out, forcing render");
+        setInitialized(true);
+      }
+    }, 4000);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
   }, [initialize]);
 
   // Show loading while initializing

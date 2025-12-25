@@ -46,7 +46,10 @@ export const OrderTrackingPage = () => {
     const [loading, setLoading] = useState(true);
 
     const fetchOrder = async () => {
-        if (!orderId) return;
+        if (!orderId) {
+            setLoading(false);
+            return;
+        }
 
         try {
             setLoading(true);
@@ -55,7 +58,7 @@ export const OrderTrackingPage = () => {
             setItems(data.items);
         } catch (error) {
             toast.error('Gagal memuat detail pesanan');
-            navigate('/user/history');
+            navigate('/user/orders');
         } finally {
             setLoading(false);
         }
@@ -113,7 +116,7 @@ export const OrderTrackingPage = () => {
                 <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => navigate('/user/history')}
+                    onClick={() => navigate('/user/orders')}
                 >
                     <ArrowLeft className="w-5 h-5" />
                 </Button>

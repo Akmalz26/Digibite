@@ -10,6 +10,7 @@ interface AuthState {
   session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  initialized: boolean;
 
   // Actions
   initialize: () => Promise<void>;
@@ -27,19 +28,24 @@ export const useAuthStore = create<AuthState>()(
       session: null,
       isAuthenticated: false,
       isLoading: true,
+      initialized: false,
 
       initialize: async () => {
+        if (get().initialized) return;
+
         try {
           // Get current session
           const { data: { session } } = await supabase.auth.getSession();
 
           if (session?.user) {
             // Fetch user profile
-            const { data: profile } = await supabase
+            const { data: profile, error } = await supabase
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
               .single();
+
+            if (error) throw error;
 
             set({
               user: session.user,
@@ -47,6 +53,7 @@ export const useAuthStore = create<AuthState>()(
               session,
               isAuthenticated: true,
               isLoading: false,
+              initialized: true,
             });
           } else {
             set({
@@ -55,6 +62,7 @@ export const useAuthStore = create<AuthState>()(
               session: null,
               isAuthenticated: false,
               isLoading: false,
+              initialized: true,
             });
           }
 
@@ -86,7 +94,7 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error) {
           console.error('Auth initialization error:', error);
-          set({ isLoading: false });
+          set({ isLoading: false, initialized: true });
         }
       },
 
