@@ -178,9 +178,9 @@ export const UserHomePage = () => {
 
           {/* Search Bar - Liquid Glass */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.8 }}
             className="max-w-xl"
           >
             <div className="relative group">
@@ -238,8 +238,8 @@ export const UserHomePage = () => {
               whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedCategory(cat.value)}
               className={`liquid-glass-card px-4 sm:px-5 py-3 rounded-2xl flex-shrink-0 flex flex-col items-center min-w-[80px] transition-all ${selectedCategory === cat.value
-                  ? 'ring-2 ring-primary bg-primary/5 shadow-lg shadow-primary/20'
-                  : ''
+                ? 'ring-2 ring-primary bg-primary/5 shadow-lg shadow-primary/20'
+                : ''
                 }`}
             >
               <span className="text-2xl mb-1">{cat.icon}</span>
