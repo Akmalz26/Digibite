@@ -77,7 +77,7 @@ Pastikan sudah terinstall:
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/akmalz_26/digibite.git
+git clone https://github.com/akmalz26/digibite.git
 cd digibite
 ```
 
@@ -618,11 +618,6 @@ MIT License - Silakan gunakan dan modifikasi sesuai kebutuhan.
 
 ---
 
-## 🤝 Kontribusi
-
-Pull request sangat welcome! Untuk perubahan besar, silakan buka issue terlebih dahulu.
-
----
 
 ## 📞 Support
 
