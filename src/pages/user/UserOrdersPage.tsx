@@ -195,7 +195,11 @@ export function UserOrdersPage() {
                             </div>
                         ) : (
                             (activeTab === 'active' ? activeOrders : historyOrders).map((order) => (
-                                <GlassCard key={order.id} className="p-4 overflow-hidden relative group">
+                                <GlassCard
+                                    key={order.id}
+                                    className="p-4 overflow-hidden relative group cursor-pointer hover:shadow-md transition-all"
+                                    onClick={() => navigate(`/user/order/${order.id}`)}
+                                >
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStatusColor(order.status)}`}>
@@ -225,13 +229,19 @@ export function UserOrdersPage() {
                                                         size="sm"
                                                         variant="outline"
                                                         className="text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/10"
-                                                        onClick={() => handleCancelOrder(order.id)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleCancelOrder(order.id);
+                                                        }}
                                                     >
                                                         Batalkan
                                                     </Button>
                                                     <Button
                                                         size="sm"
-                                                        onClick={() => handlePay(order)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handlePay(order);
+                                                        }}
                                                     >
                                                         Bayar
                                                     </Button>
