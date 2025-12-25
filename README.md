@@ -177,6 +177,12 @@ Buka **SQL Editor** di Supabase Dashboard dan jalankan file-file berikut secara 
 -- Jalankan di SQL Editor
 ```
 
+#### 9. Auto Process Orders (`009_auto_process_orders.sql`)
+```sql
+-- Salin isi file: supabase/migrations/009_auto_process_orders.sql
+-- Jalankan di SQL Editor
+```
+
 ### Step 4: Setup Storage Bucket
 
 1. Buka **Storage** di Supabase Dashboard

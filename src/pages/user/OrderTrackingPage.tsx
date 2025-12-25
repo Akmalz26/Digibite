@@ -18,7 +18,6 @@ import { getOrderDetails, subscribeToOrderStatus } from '@/services/orderService
 import { toast } from 'sonner';
 
 const orderSteps = [
-    { key: 'pending', label: 'Belum Dibayar', icon: Clock },
     { key: 'paid', label: 'Dibayar', icon: CheckCircle },
     { key: 'processing', label: 'Di Proses', icon: Package },
     { key: 'completed', label: 'Selesai', icon: CheckCircle },
@@ -26,15 +25,17 @@ const orderSteps = [
 
 const getStepIndex = (status: string): number => {
     const statusMap: Record<string, number> = {
-        pending: 0,
-        paid: 1,
-        processing: 2,
-        ready: 2, // ready maps to processing step
-        delivered: 2, // delivered maps to processing step
-        completed: 3,
+        pending: -1, // Not started in this flow
+        paid: 0,
+        processing: 1,
+        ready: 1, // still processing/ready
+        delivered: 1,
+        completed: 2,
         cancel: -1,
     };
-    return statusMap[status] ?? 0;
+    // If pending, show nothing or step 0 unactive? 
+    // If pending, currentStep should be -1 so no steps are active green.
+    return statusMap[status] ?? -1;
 };
 
 export const OrderTrackingPage = () => {

@@ -47,7 +47,7 @@ export const CheckoutPage = () => {
   const [checkingPending, setCheckingPending] = useState(true);
 
   // Get tenant ID from first item
-  const tenantId = items[0]?.product.tenant_id || items[0]?.product.tenantId;
+  const tenantId = items[0]?.product.tenantId || items[0]?.product.tenantId;
 
   // Check for pending orders
   useEffect(() => {
