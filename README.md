@@ -618,11 +618,6 @@ MIT License - Silakan gunakan dan modifikasi sesuai kebutuhan.
 
 ---
 
-## 🤝 Kontribusi
-
-Pull request sangat welcome! Untuk perubahan besar, silakan buka issue terlebih dahulu.
-
----
 
 ## 📞 Support
 
