@@ -77,7 +77,7 @@ Pastikan sudah terinstall:
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/akmalz_26/digibite.git
+git clone https://github.com/akmalz26/digibite.git
 cd digibite
 ```
 
