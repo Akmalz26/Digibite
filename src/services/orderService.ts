@@ -377,7 +377,7 @@ export async function getSellerOrders(status?: string): Promise<any[]> {
  */
 export async function updateOrderStatus(
     orderId: string,
-    status: 'pending' | 'paid' | 'completed' | 'cancel'
+    status: 'pending' | 'paid' | 'processing' | 'completed' | 'cancel'
 ): Promise<void> {
     const updates: any = { status };
 

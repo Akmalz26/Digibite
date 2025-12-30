@@ -32,13 +32,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: 'Menunggu', color: 'text-yellow-500 bg-yellow-500/10', icon: Clock },
   paid: { label: 'Dibayar', color: 'text-blue-500 bg-blue-500/10', icon: CreditCard },
+  processing: { label: 'Diproses', color: 'text-purple-500 bg-purple-500/10', icon: Loader2 },
   completed: { label: 'Selesai', color: 'text-green-500 bg-green-500/10', icon: CheckCircle },
   cancel: { label: 'Dibatalkan', color: 'text-red-500 bg-red-500/10', icon: XCircle },
 };
+
+// Options for status dropdown
+const statusOptions = [
+  { value: 'pending', label: 'Menunggu Pembayaran' },
+  { value: 'paid', label: 'Sudah Dibayar' },
+  { value: 'processing', label: 'Sedang Diproses' },
+  { value: 'completed', label: 'Selesai' },
+  { value: 'cancel', label: 'Dibatalkan' },
+];
 
 export function SellerOrders() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -336,7 +353,8 @@ export function SellerOrders() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {/* Quick action buttons */}
                       {order.status === 'pending' && (
                         <>
                           <Button
@@ -367,6 +385,41 @@ export function SellerOrders() {
                       )}
 
                       {order.status === 'paid' && (
+                        <>
+                          <Button
+                            size="sm"
+                            className="bg-purple-500 hover:bg-purple-600"
+                            onClick={() => handleUpdateStatus(order.id, 'processing')}
+                            disabled={updatingStatus === order.id}
+                          >
+                            {updatingStatus === order.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-1" />
+                                Proses
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-green-500 hover:bg-green-600"
+                            onClick={() => handleUpdateStatus(order.id, 'completed')}
+                            disabled={updatingStatus === order.id}
+                          >
+                            {updatingStatus === order.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Selesai
+                              </>
+                            )}
+                          </Button>
+                        </>
+                      )}
+
+                      {order.status === 'processing' && (
                         <Button
                           size="sm"
                           className="flex-1 bg-green-500 hover:bg-green-600"
@@ -394,6 +447,30 @@ export function SellerOrders() {
                         <div className="flex-1 text-center py-2 text-sm text-red-500 font-medium">
                           ✕ Dibatalkan
                         </div>
+                      )}
+
+                      {/* Status dropdown - always visible for manual override */}
+                      {order.status !== 'completed' && order.status !== 'cancel' && (
+                        <Select
+                          value={order.status}
+                          onValueChange={(value) => handleUpdateStatus(order.id, value)}
+                          disabled={updatingStatus === order.id}
+                        >
+                          <SelectTrigger className="w-[130px] h-8 text-xs">
+                            <SelectValue placeholder="Ubah Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statusOptions.map(option => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                                disabled={option.value === order.status}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       )}
 
                       <Button
@@ -479,12 +556,52 @@ export function SellerOrders() {
               {/* Status Info */}
               <div className="glass p-4 rounded-xl">
                 <h4 className="font-semibold mb-2">Status</h4>
-                <div className="space-y-1 text-sm">
-                  <p><span className="text-muted-foreground">Status:</span> {statusConfig[selectedOrder.status]?.label}</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Status:</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig[selectedOrder.status]?.color}`}>
+                      {statusConfig[selectedOrder.status]?.label}
+                    </span>
+                  </div>
                   <p><span className="text-muted-foreground">Metode:</span> {selectedOrder.payment_method === 'cash' ? 'Tunai' : 'Digital'}</p>
                   <p><span className="text-muted-foreground">Dibuat:</span> {formatDate(selectedOrder.created_at)}</p>
                   {selectedOrder.paid_at && (
                     <p><span className="text-muted-foreground">Dibayar:</span> {formatDate(selectedOrder.paid_at)}</p>
+                  )}
+
+                  {/* Status Change in Dialog */}
+                  {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancel' && (
+                    <div className="pt-3 border-t border-white/10">
+                      <p className="text-muted-foreground mb-2">Ubah Status:</p>
+                      <div className="flex gap-2">
+                        <Select
+                          value={selectedOrder.status}
+                          onValueChange={(value) => {
+                            handleUpdateStatus(selectedOrder.id, value);
+                            setSelectedOrder({ ...selectedOrder, status: value });
+                          }}
+                          disabled={updatingStatus === selectedOrder.id}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statusOptions.map(option => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                                disabled={option.value === selectedOrder.status}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {updatingStatus === selectedOrder.id && (
+                          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
