@@ -326,6 +326,74 @@ export function subscribeToOrderStatus(
     };
 }
 
+/**
+ * Subscribe to seller's orders (realtime) - for new orders, updates, and deletions
+ */
+export async function subscribeToSellerOrders(
+    callback: (eventType: 'INSERT' | 'UPDATE' | 'DELETE', order: any) => void
+): Promise<() => void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Get seller's tenant
+    const { data: tenantResult } = await supabase
+        .from('tenants')
+        .select('id')
+        .eq('owner_id', user.id);
+
+    const tenants = tenantResult as { id: string }[] | null;
+    if (!tenants || tenants.length === 0) {
+        // Return empty unsubscribe function
+        return () => { };
+    }
+
+    const tenantId = tenants[0].id;
+
+    const channel = supabase
+        .channel(`seller-orders-${tenantId}`)
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'orders',
+                filter: `tenant_id=eq.${tenantId}`,
+            },
+            (payload) => {
+                callback('INSERT', payload.new);
+            }
+        )
+        .on(
+            'postgres_changes',
+            {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'orders',
+                filter: `tenant_id=eq.${tenantId}`,
+            },
+            (payload) => {
+                callback('UPDATE', payload.new);
+            }
+        )
+        .on(
+            'postgres_changes',
+            {
+                event: 'DELETE',
+                schema: 'public',
+                table: 'orders',
+                filter: `tenant_id=eq.${tenantId}`,
+            },
+            (payload) => {
+                callback('DELETE', payload.old);
+            }
+        )
+        .subscribe();
+
+    return () => {
+        supabase.removeChannel(channel);
+    };
+}
+
 // ==================== SELLER FUNCTIONS ====================
 
 /**
@@ -374,23 +442,20 @@ export async function getSellerOrders(status?: string): Promise<any[]> {
 
 /**
  * Update order status (seller)
+ * Balance update and paid_at is handled by database trigger
  */
 export async function updateOrderStatus(
     orderId: string,
     status: 'pending' | 'paid' | 'processing' | 'completed' | 'cancel'
 ): Promise<void> {
-    const updates: any = { status };
-
-    if (status === 'paid' || status === 'completed') {
-        updates.paid_at = new Date().toISOString();
-    }
-
+    // Only send status update - trigger will handle paid_at and balance
     const { error } = await supabase
         .from('orders')
-        .update(updates as unknown as never)
+        .update({ status } as unknown as never)
         .eq('id', orderId);
 
     if (error) throw error;
+    // Note: Balance update and paid_at are handled by database trigger (update_tenant_balance)
 }
 
 /**

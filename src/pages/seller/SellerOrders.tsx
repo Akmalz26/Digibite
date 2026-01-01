@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
@@ -15,9 +15,10 @@ import {
   Banknote,
   Filter,
   ChevronDown,
-  MessageCircle
+  MessageCircle,
+  Bell
 } from 'lucide-react';
-import { getSellerOrders, updateOrderStatus, getSellerOrderStats } from '@/services/orderService';
+import { getSellerOrders, updateOrderStatus, getSellerOrderStats, subscribeToSellerOrders } from '@/services/orderService';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -66,6 +67,7 @@ export function SellerOrders() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   const fetchOrders = async () => {
     try {
@@ -88,12 +90,57 @@ export function SellerOrders() {
     fetchOrders();
   }, [statusFilter]);
 
+  // Realtime subscription for new orders
+  useEffect(() => {
+    const setupRealtime = async () => {
+      try {
+        const unsubscribe = await subscribeToSellerOrders((eventType, order) => {
+          if (eventType === 'INSERT') {
+            // New order received - show notification and refresh
+            toast.success('🔔 Pesanan baru masuk!', {
+              description: `Order #${order.id?.slice(0, 8)}`,
+              duration: 5000,
+            });
+            // Play notification sound (optional)
+            try {
+              const audio = new Audio('/notification.mp3');
+              audio.volume = 0.5;
+              audio.play().catch(() => { }); // Ignore if audio fails
+            } catch { }
+            // Refresh orders
+            fetchOrders();
+          } else if (eventType === 'UPDATE') {
+            // Update existing order in state
+            setOrders(prev => prev.map(o => o.id === order.id ? { ...o, ...order } : o));
+            // Also refresh stats
+            getSellerOrderStats().then(setStats).catch(() => { });
+          } else if (eventType === 'DELETE') {
+            // Remove deleted order from state
+            setOrders(prev => prev.filter(o => o.id !== order.id));
+          }
+        });
+        unsubscribeRef.current = unsubscribe;
+      } catch (error) {
+        console.error('Failed to setup realtime subscription:', error);
+      }
+    };
+
+    setupRealtime();
+
+    // Cleanup on unmount
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+    };
+  }, []);
+
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     setUpdatingStatus(orderId);
     try {
       await updateOrderStatus(orderId, newStatus as any);
       toast.success(`Status pesanan berhasil diperbarui ke ${statusConfig[newStatus]?.label}`);
-      fetchOrders();
+      // No need to fetchOrders - realtime will update it
     } catch (error: any) {
       toast.error('Gagal memperbarui status');
     } finally {

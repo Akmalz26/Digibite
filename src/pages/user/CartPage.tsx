@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ShoppingCart, Plus, Minus, Trash2, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, ArrowRight, Store } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { useCartStore } from '@/store/cartStore';
 
 export const CartPage = () => {
   const navigate = useNavigate();
-  const { items, updateQuantity, removeFromCart, getTotalPrice } = useCartStore();
+  const { items, updateQuantity, removeFromCart, getTotalPrice, getCurrentTenantName } = useCartStore();
 
   if (items.length === 0) {
     return (
@@ -30,12 +30,22 @@ export const CartPage = () => {
     );
   }
 
+  const tenantName = getCurrentTenantName();
+
   return (
     <div className="space-y-6 pb-32">
       <div>
         <h1 className="text-3xl font-bold mb-2">Keranjang Belanja</h1>
         <p className="text-muted-foreground">{items.length} item di keranjang</p>
       </div>
+
+      {/* Current Tenant Info */}
+      {tenantName && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-primary/10 rounded-lg px-4 py-2">
+          <Store className="w-4 h-4" />
+          <span>Pesanan dari: <strong className="text-foreground">{tenantName}</strong></span>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Cart Items */}

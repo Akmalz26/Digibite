@@ -35,7 +35,7 @@ type PaymentMethod = 'midtrans' | 'cash';
 
 export const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { items, getTotalPrice, clearCart } = useCartStore();
+  const { items, getTotalPrice, clearCart, getCurrentTenantId, getCurrentTenantName } = useCartStore();
   const { profile } = useAuthStore();
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,8 +46,9 @@ export const CheckoutPage = () => {
   const [pendingOrder, setPendingOrder] = useState<any>(null);
   const [checkingPending, setCheckingPending] = useState(true);
 
-  // Get tenant ID from first item
-  const tenantId = items[0]?.product.tenantId || items[0]?.product.tenantId;
+  // Get tenant ID from cart store
+  const tenantId = getCurrentTenantId();
+  const tenantName = getCurrentTenantName();
 
   // Check for pending orders
   useEffect(() => {

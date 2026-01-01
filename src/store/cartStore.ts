@@ -4,20 +4,44 @@ import { CartItem, Product } from '@/types';
 
 interface CartState {
   items: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
+  currentTenantId: string | null;
+  currentTenantName: string | null;
+  addToCart: (product: Product, quantity?: number, forceReplace?: boolean) => boolean;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
+  getCurrentTenantId: () => string | null;
+  getCurrentTenantName: () => string | null;
+  hasDifferentTenant: (tenantId: string) => boolean;
 }
 
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
-      addToCart: (product: Product, quantity = 1) => {
-        const items = get().items;
+      currentTenantId: null,
+      currentTenantName: null,
+      addToCart: (product: Product, quantity = 1, forceReplace = false) => {
+        const state = get();
+        const items = state.items;
+
+        // Check if adding product from different tenant
+        if (state.currentTenantId && state.currentTenantId !== product.tenantId) {
+          if (!forceReplace) {
+            // Return false to indicate different tenant - caller should show confirmation
+            return false;
+          }
+          // Force replace - clear cart and add new product
+          set({
+            items: [{ product, quantity }],
+            currentTenantId: product.tenantId,
+            currentTenantName: product.tenantName,
+          });
+          return true;
+        }
+
         const existingItem = items.find(item => item.product.id === product.id);
 
         if (existingItem) {
@@ -29,11 +53,21 @@ export const useCartStore = create<CartState>()(
             ),
           });
         } else {
-          set({ items: [...items, { product, quantity }] });
+          set({
+            items: [...items, { product, quantity }],
+            currentTenantId: product.tenantId,
+            currentTenantName: product.tenantName,
+          });
         }
+        return true;
       },
       removeFromCart: (productId: string) => {
-        set({ items: get().items.filter(item => item.product.id !== productId) });
+        const newItems = get().items.filter(item => item.product.id !== productId);
+        if (newItems.length === 0) {
+          set({ items: [], currentTenantId: null, currentTenantName: null });
+        } else {
+          set({ items: newItems });
+        }
       },
       updateQuantity: (productId: string, quantity: number) => {
         if (quantity <= 0) {
@@ -47,13 +81,23 @@ export const useCartStore = create<CartState>()(
         });
       },
       clearCart: () => {
-        set({ items: [] });
+        set({ items: [], currentTenantId: null, currentTenantName: null });
       },
       getTotalItems: () => {
         return get().items.reduce((total, item) => total + item.quantity, 0);
       },
       getTotalPrice: () => {
         return get().items.reduce((total, item) => total + item.product.price * item.quantity, 0);
+      },
+      getCurrentTenantId: () => {
+        return get().currentTenantId;
+      },
+      getCurrentTenantName: () => {
+        return get().currentTenantName;
+      },
+      hasDifferentTenant: (tenantId: string) => {
+        const state = get();
+        return state.currentTenantId !== null && state.currentTenantId !== tenantId;
       },
     }),
     {

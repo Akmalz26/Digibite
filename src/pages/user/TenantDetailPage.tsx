@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, Clock, MapPin, ArrowLeft, Plus, Minus, ShoppingCart, Loader2 } from 'lucide-react';
+import { Star, Clock, MapPin, ArrowLeft, Plus, Minus, ShoppingCart, Loader2, AlertTriangle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { getTenantById } from '@/services/tenantService';
 import { getProductsByTenant } from '@/services/productService';
 import { useCartStore } from '@/store/cartStore';
@@ -28,12 +29,14 @@ const mapToCartProduct = (product: Product, tenant: Tenant) => ({
 export const TenantDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCartStore();
+  const { addToCart, getCurrentTenantName, hasDifferentTenant } = useCartStore();
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [showReplaceCartDialog, setShowReplaceCartDialog] = useState(false);
+  const [pendingCartItem, setPendingCartItem] = useState<{ product: any; quantity: number } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -79,11 +82,39 @@ export const TenantDetailPage = () => {
   const handleAddToCart = () => {
     if (selectedProduct && tenant) {
       const cartProduct = mapToCartProduct(selectedProduct, tenant);
-      addToCart(cartProduct as any, quantity);
-      toast.success(`${selectedProduct.name} ditambahkan ke keranjang!`);
+
+      // Check if cart has items from different tenant
+      if (hasDifferentTenant(tenant.id)) {
+        setPendingCartItem({ product: cartProduct, quantity });
+        setShowReplaceCartDialog(true);
+        return;
+      }
+
+      const success = addToCart(cartProduct as any, quantity);
+      if (success) {
+        toast.success(`${selectedProduct.name} ditambahkan ke keranjang!`);
+        setSelectedProduct(null);
+        setQuantity(1);
+      }
+    }
+  };
+
+  const handleConfirmReplaceCart = () => {
+    if (pendingCartItem) {
+      const success = addToCart(pendingCartItem.product, pendingCartItem.quantity, true);
+      if (success) {
+        toast.success(`Keranjang diganti! ${pendingCartItem.product.name} ditambahkan.`);
+      }
+      setPendingCartItem(null);
+      setShowReplaceCartDialog(false);
       setSelectedProduct(null);
       setQuantity(1);
     }
+  };
+
+  const handleCancelReplaceCart = () => {
+    setPendingCartItem(null);
+    setShowReplaceCartDialog(false);
   };
 
   return (
@@ -267,6 +298,35 @@ export const TenantDetailPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Replace Cart Confirmation Dialog */}
+      <Dialog open={showReplaceCartDialog} onOpenChange={setShowReplaceCartDialog}>
+        <DialogContent className="glass-strong border-amber-500/30">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-full bg-amber-500/20">
+                <AlertTriangle className="w-6 h-6 text-amber-500" />
+              </div>
+              <DialogTitle>Ganti Keranjang?</DialogTitle>
+            </div>
+            <DialogDescription className="text-left">
+              Keranjang Anda saat ini berisi produk dari <strong>{getCurrentTenantName()}</strong>.
+              Menambahkan produk dari <strong>{tenant?.name}</strong> akan mengganti isi keranjang Anda.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleCancelReplaceCart}>
+              Batal
+            </Button>
+            <Button
+              onClick={handleConfirmReplaceCart}
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              Ya, Ganti Keranjang
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

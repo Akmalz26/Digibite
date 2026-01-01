@@ -306,14 +306,45 @@ export async function getSellerStats(): Promise<{
 
 /**
  * Get admin balance from admin_settings
+ * Falls back to calculating from orders if RPC fails
  */
 export async function getAdminBalance(): Promise<number> {
-    const { data, error } = await supabase.rpc('get_admin_balance');
-    if (error) {
-        console.error('Error getting admin balance:', error);
-        return 0;
+    try {
+        // Try RPC first
+        const { data, error } = await supabase.rpc('get_admin_balance' as any);
+        if (!error && data !== null) {
+            return data || 0;
+        }
+    } catch (e) {
+        console.log('RPC get_admin_balance not available, trying fallback');
     }
-    return data || 0;
+
+    // Fallback 1: Try to query admin_settings directly
+    try {
+        const { data: settingsData } = await supabase
+            .from('admin_settings' as any)
+            .select('value')
+            .eq('key', 'admin_balance')
+            .single();
+
+        if (settingsData && (settingsData as any)?.value?.balance !== undefined) {
+            return Number((settingsData as any).value.balance) || 0;
+        }
+    } catch (e) {
+        console.log('admin_settings table not available, using service fee sum');
+    }
+
+    // Fallback 2: Calculate from service_fee in orders
+    const { data: ordersData } = await supabase
+        .from('orders')
+        .select('service_fee')
+        .in('status', ['paid', 'completed', 'processing']);
+
+    if (ordersData) {
+        return (ordersData as any[]).reduce((sum: number, order: any) => sum + (Number(order.service_fee) || 0), 0);
+    }
+
+    return 0;
 }
 
 /**
